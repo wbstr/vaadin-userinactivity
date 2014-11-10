@@ -15,9 +15,9 @@ public class UserInactivityExtension extends AbstractExtension {
 
     private final Collection<TimeoutListener> timeoutListeners = new HashSet<TimeoutListener>();
     private final Collection<ActionListener> actionListeners = new HashSet<ActionListener>();
-    private SessionHandler sessionHandler;
+    private SessionTimeoutHandler sessionTimeoutHandler;
 
-    public UserInactivityExtension() {
+    UserInactivityExtension() {
         registerRpc(new UserInactivityServerRpc() {
             @Override
             public void timeout() {
@@ -60,7 +60,6 @@ public class UserInactivityExtension extends AbstractExtension {
     }
 
     public void scheduleTimeout(int timeout) {
-        System.out.println(System.currentTimeMillis()/1000 + ": schedue "+timeout+" on " + UI.getCurrent().getConnectorId());
         getRpcProxy(UserInactivityClientRpc.class).scheduleTimeout(timeout);
     }
 
@@ -68,17 +67,17 @@ public class UserInactivityExtension extends AbstractExtension {
         scheduleTimeout(0);
     }
     
-    public SessionHandler initSessionHandler(int timeoutSeconds) {
-        if (sessionHandler == null) {
-            sessionHandler = new SessionHandler(this, timeoutSeconds);
-            return sessionHandler;
+    public SessionTimeoutHandler initSessionTimeoutHandler(int timeoutSeconds) {
+        if (sessionTimeoutHandler == null) {
+            sessionTimeoutHandler = new SessionTimeoutHandler(this, timeoutSeconds);
+            return sessionTimeoutHandler;
         } else {
-            throw new IllegalStateException("Already sessionHandler inititalized.");
+            throw new IllegalStateException("SessionHandler already  inititalized.");
         }
     }
     
-    public SessionHandler getSessionHandler() {
-        return sessionHandler;
+    public SessionTimeoutHandler getSessionTimeoutHandler() {
+        return sessionTimeoutHandler;
     }
 
     private void fireTimeoutEvent() {
@@ -103,26 +102,18 @@ public class UserInactivityExtension extends AbstractExtension {
         void action();
     }
 
-    public static UserInactivityExtension extendCurrentUI() {
-        UI currentUi = UI.getCurrent();
-        UserInactivityExtension instance = findInstance(currentUi);
+    public static UserInactivityExtension init(UI ui) {
+        UserInactivityExtension instance = get(ui);
         if (instance != null) {
-            throw new IllegalStateException("Already extended");
+            throw new IllegalStateException("UI already extended.");
         }
         instance = new UserInactivityExtension();
-        instance.extend(currentUi);
+        instance.extend(ui);
         return instance;
     }
 
-    public static UserInactivityExtension getCurrent() {
-        UI currentUi = UI.getCurrent();
-        UserInactivityExtension instance = findInstance(currentUi);
-        return instance;
-    }
-
-    private static UserInactivityExtension findInstance(UI currentUi) {
-
-        Collection<Extension> extensions = currentUi.getExtensions();
+    public static UserInactivityExtension get(UI ui) {
+        Collection<Extension> extensions = ui.getExtensions();
         for (Extension extension : extensions) {
             if (extension instanceof UserInactivityExtension) {
                 return (UserInactivityExtension) extension;

@@ -13,7 +13,7 @@ import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
 import com.wcs.vaadin.userinactivity.UserInactivityExtension;
-import com.wcs.vaadin.userinactivity.SessionHandler;
+import com.wcs.vaadin.userinactivity.SessionTimeoutHandler;
 import java.util.Calendar;
 import org.vaadin.kim.countdownclock.CountdownClock;
 import org.vaadin.kim.countdownclock.CountdownClock.EndEventListener;
@@ -22,8 +22,8 @@ import org.vaadin.kim.countdownclock.CountdownClock.EndEventListener;
 @SuppressWarnings("serial")
 public class DemoUI extends UI {
 
-    private SessionHandler sessionInactivityHandler;
-    private static final int SESSION_INACTIVITY_TIMEOUT = 10;
+    private SessionTimeoutHandler sessionTimeoutHandler;
+    private static final int SESSION_TIMEOUT = 10;
     private static final int COUNT_DOWN_TIMEOUT = 5;
     private CountDownWindow countDownWindow;
 
@@ -36,22 +36,23 @@ public class DemoUI extends UI {
     protected void init(VaadinRequest request) {
         VerticalLayout layout = new VerticalLayout();
         layout.setSizeFull();
-        layout.addComponent(new Label("A window will pop up, when no action in "+SESSION_INACTIVITY_TIMEOUT+" second."));
+        layout.addComponent(new Label("A window will pop up, when no action in "+SESSION_TIMEOUT+" second."));
         layout.addComponent(new Button("Action"));
         setContent(layout);
-        sessionInactivityHandler = UserInactivityExtension.extendCurrentUI().initSessionHandler(SESSION_INACTIVITY_TIMEOUT);
-        sessionInactivityHandler.addTimeoutListener(new SessionHandler.SessionInactivityTimeoutListener() {
+        UserInactivityExtension userInactivityExtension = UserInactivityExtension.init(this);
+        sessionTimeoutHandler = userInactivityExtension.initSessionTimeoutHandler(SESSION_TIMEOUT);
+        sessionTimeoutHandler.addTimeoutListener(new SessionTimeoutHandler.SessionInactivityTimeoutListener() {
 
             @Override
             public void timeout() {
                 openCountDownWindow();
             }
         });
-        UserInactivityExtension.getCurrent().addActionListener(new UserInactivityExtension.ActionListener() {
+        userInactivityExtension.addActionListener(new UserInactivityExtension.ActionListener() {
 
             @Override
             public void action() {
-                Notification.show("OK, "+SESSION_INACTIVITY_TIMEOUT+" seconds from now");
+                Notification.show("OK, "+SESSION_TIMEOUT+" seconds from now");
                 closeCountDownWindow();
             }
         });
@@ -88,7 +89,7 @@ public class DemoUI extends UI {
             layout.setSpacing(true);
             CountdownClock clock = new CountdownClock();
             Calendar c = Calendar.getInstance();
-            c.add(Calendar.SECOND, COUNT_DOWN_TIMEOUT + sessionInactivityHandler.getSecondsLeft());
+            c.add(Calendar.SECOND, COUNT_DOWN_TIMEOUT + sessionTimeoutHandler.getRemainingSeconds());
             clock.setDate(c.getTime());
             clock.setFormat("<span style='font: bold 25px Arial; margin: 10px'>"
                             + "You will be logged out in %s seconds.</span>");
@@ -96,13 +97,13 @@ public class DemoUI extends UI {
                 @Override
                 public void countDownEnded(CountdownClock clock) {
                     closeCountDownWindow();
-                    if (sessionInactivityHandler.getSecondsLeft() < COUNT_DOWN_TIMEOUT) {
+                    if (sessionTimeoutHandler.getRemainingSeconds() < COUNT_DOWN_TIMEOUT) {
                         Notification.show("Imagine you are logged out!", Notification.Type.ERROR_MESSAGE);
-                    } else if (sessionInactivityHandler.getSecondsLeft() < 1) {
+                    } else if (sessionTimeoutHandler.getRemainingSeconds() < 1) {
                         openCountDownWindow();
                     } else {
                         Notification.show("User action initiated on an other browser tab.");
-                        sessionInactivityHandler.reschedule();
+                        sessionTimeoutHandler.reschedule();
                     }
                 }
             });

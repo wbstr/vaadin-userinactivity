@@ -16,7 +16,6 @@
 package com.wcs.vaadin.userinactivity;
 
 import com.vaadin.server.VaadinSession;
-import com.vaadin.ui.UI;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
@@ -25,15 +24,15 @@ import java.util.Set;
  *
  * @author kumm
  */
-public class SessionHandler {
+public class SessionTimeoutHandler implements Serializable {
 
     private final int sessionTimeoutSeconds;
     private final UserInactivityExtension clientInactivityExtension;
     private final Set<SessionInactivityTimeoutListener> timeoutListeners = new HashSet<SessionInactivityTimeoutListener>();
     private final static String SESSION_KEY_LAST_ACTION_TIME
-            = SessionHandler.class.getName() + ":last_client_action_time";
+            = SessionTimeoutHandler.class.getName() + ":last_client_action_time";
 
-    SessionHandler(UserInactivityExtension clientInactivityExtension, int sessionTimeoutSeconds) {
+    SessionTimeoutHandler(UserInactivityExtension clientInactivityExtension, int sessionTimeoutSeconds) {
         this.clientInactivityExtension = clientInactivityExtension;
         this.sessionTimeoutSeconds = sessionTimeoutSeconds;
         clientInactivityExtension.addTimeoutListener(new UserInactivityExtension.TimeoutListener() {
@@ -76,8 +75,10 @@ public class SessionHandler {
     }
 
     private void onInactivityTimeout() {
-        int remainingSeconds = getSecondsLeft();
-        System.out.println(System.currentTimeMillis()/1000 + ": timeout left "+remainingSeconds+" on "+UI.getCurrent().getConnectorId());        
+        if (sessionTimeoutSeconds < 1) {
+            return;
+        }
+        int remainingSeconds = getRemainingSeconds();
         if (remainingSeconds < 1) {
             fireTimeoutEvent();
         } else {
@@ -85,14 +86,13 @@ public class SessionHandler {
         }
     }
     
-    public int getSecondsLeft() {
+    public int getRemainingSeconds() {
         int elapsedSeconds = (int) Math.round((double)(System.currentTimeMillis() - getLastActionTime()) / 1000);
         int remainingSeconds = sessionTimeoutSeconds - elapsedSeconds;
         return remainingSeconds;
     }
 
     private void onUserAction() {
-        System.out.println(System.currentTimeMillis()/1000 + ": action on "+UI.getCurrent().getConnectorId());
         registerLastActionTime();
         if (sessionTimeoutSeconds > 0) {
             clientInactivityExtension.scheduleTimeout(sessionTimeoutSeconds);
