@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014 kumm.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.wcs.vaadin.userinactivity.demo;
 
 import javax.servlet.annotation.WebServlet;
@@ -25,7 +40,6 @@ public class DemoUI extends UI {
     private SessionTimeoutHandler sessionTimeoutHandler;
     private static final int SESSION_TIMEOUT = 10;
     private static final int COUNT_DOWN_TIMEOUT = 5;
-    private CountDownWindow countDownWindow;
 
     @WebServlet(value = "/*", asyncSupported = true)
     @VaadinServletConfiguration(productionMode = false, ui = DemoUI.class, widgetset = "com.wcs.vaadin.userinactivity.demo.DemoWidgetSet")
@@ -40,36 +54,31 @@ public class DemoUI extends UI {
         layout.addComponent(new Button("Action"));
         setContent(layout);
         UserInactivityExtension userInactivityExtension = UserInactivityExtension.init(this);
-        sessionTimeoutHandler = userInactivityExtension.initSessionTimeoutHandler(SESSION_TIMEOUT);
-        sessionTimeoutHandler.addTimeoutListener(new SessionTimeoutHandler.SessionInactivityTimeoutListener() {
+        sessionTimeoutHandler = userInactivityExtension.initSessionTimeoutHandler();
+        sessionTimeoutHandler.addTimeoutListener(new SessionTimeoutHandler.SessionTimeoutListener() {
 
             @Override
             public void timeout() {
+                sessionTimeoutHandler.stop();
                 openCountDownWindow();
             }
         });
+        sessionTimeoutHandler.start(SESSION_TIMEOUT);
         userInactivityExtension.addActionListener(new UserInactivityExtension.ActionListener() {
 
             @Override
             public void action() {
-                Notification.show("OK, "+SESSION_TIMEOUT+" seconds from now");
-                closeCountDownWindow();
+                if (sessionTimeoutHandler.isRunning()) {
+                    Notification.show("OK, "+SESSION_TIMEOUT+" seconds from now");
+                }
             }
         });
     }
     
     private void openCountDownWindow() {
-        countDownWindow = new CountDownWindow();
-        addWindow(countDownWindow);
+        addWindow(new CountDownWindow());
     }
-
-    private void closeCountDownWindow() {
-        if (countDownWindow != null) {
-            removeWindow(countDownWindow);
-            countDownWindow = null;
-        }
-    }
-
+    
     private class CountDownWindow extends Window {
 
         private final VerticalLayout layout;
@@ -78,6 +87,7 @@ public class DemoUI extends UI {
             setCaption("You were inactive");
             setResizable(false);
             setClosable(false);
+            setModal(true);
             center();
             layout = new VerticalLayout();
             setContent(layout);
@@ -96,9 +106,10 @@ public class DemoUI extends UI {
             clock.addEndEventListener(new EndEventListener() {
                 @Override
                 public void countDownEnded(CountdownClock clock) {
-                    closeCountDownWindow();
+                    close();
                     if (sessionTimeoutHandler.getRemainingSeconds() < COUNT_DOWN_TIMEOUT) {
                         Notification.show("Imagine you are logged out!", Notification.Type.ERROR_MESSAGE);
+                        sessionTimeoutHandler.stop();
                     } else if (sessionTimeoutHandler.getRemainingSeconds() < 1) {
                         openCountDownWindow();
                     } else {
@@ -108,9 +119,16 @@ public class DemoUI extends UI {
                 }
             });
             layout.addComponent(clock);
-            layout.addComponent(new Button("Extend session"));
-        }
+            layout.addComponent(new Button("Extend session", new Button.ClickListener() {
 
+                @Override
+                public void buttonClick(Button.ClickEvent event) {
+                    close();
+                    sessionTimeoutHandler.start(SESSION_TIMEOUT);
+                }
+            }));
+        }
+        
     }
 
 }

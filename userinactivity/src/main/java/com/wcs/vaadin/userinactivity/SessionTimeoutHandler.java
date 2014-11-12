@@ -26,42 +26,43 @@ import java.util.Set;
  */
 public class SessionTimeoutHandler implements Serializable {
 
-    private final int sessionTimeoutSeconds;
+    private int sessionTimeoutSeconds;
     private final UserInactivityExtension clientInactivityExtension;
-    private final Set<SessionInactivityTimeoutListener> timeoutListeners = new HashSet<SessionInactivityTimeoutListener>();
+    private final Set<SessionTimeoutListener> timeoutListeners = new HashSet<SessionTimeoutListener>();
     private final static String SESSION_KEY_LAST_ACTION_TIME
             = SessionTimeoutHandler.class.getName() + ":last_client_action_time";
+    private final UserInactivityExtension.TimeoutListener inactivityTimeoutListener;
+    private final UserInactivityExtension.ActionListener inactivityActionListener;
+    private boolean running = false;
 
-    SessionTimeoutHandler(UserInactivityExtension clientInactivityExtension, int sessionTimeoutSeconds) {
+    SessionTimeoutHandler(UserInactivityExtension clientInactivityExtension) {
         this.clientInactivityExtension = clientInactivityExtension;
-        this.sessionTimeoutSeconds = sessionTimeoutSeconds;
-        clientInactivityExtension.addTimeoutListener(new UserInactivityExtension.TimeoutListener() {
+        inactivityTimeoutListener = new UserInactivityExtension.TimeoutListener() {
 
             @Override
             public void timeout() {
                 onInactivityTimeout();
             }
-        });
-        clientInactivityExtension.addActionListener(new UserInactivityExtension.ActionListener() {
+        };
+        inactivityActionListener = new UserInactivityExtension.ActionListener() {
 
             @Override
             public void action() {
                 onUserAction();
             }
-        });
-        onUserAction();
+        };
     }
 
-    public void addTimeoutListener(SessionInactivityTimeoutListener listener) {
+    public void addTimeoutListener(SessionTimeoutListener listener) {
         timeoutListeners.add(listener);
     }
 
-    public void removeTimeoutListener(SessionInactivityTimeoutListener listener) {
+    public void removeTimeoutListener(SessionTimeoutListener listener) {
         timeoutListeners.remove(listener);
     }
 
     private void fireTimeoutEvent() {
-        for (SessionInactivityTimeoutListener timeoutListener : timeoutListeners) {
+        for (SessionTimeoutListener timeoutListener : timeoutListeners) {
             timeoutListener.timeout();
         }
     }
@@ -71,7 +72,36 @@ public class SessionTimeoutHandler implements Serializable {
     }
 
     public void reschedule() {
-        onInactivityTimeout();
+        if (!running) {
+            throw new IllegalStateException("Not running");
+        }
+        if (sessionTimeoutSeconds < 1) {
+            return;
+        }
+        int remainingSeconds = getRemainingSeconds();
+        if (remainingSeconds < 1) {
+            remainingSeconds = 1;
+        }
+        clientInactivityExtension.scheduleTimeout(remainingSeconds);
+    }
+
+    public void start(int sessionTimeoutSeconds) {
+        this.sessionTimeoutSeconds = sessionTimeoutSeconds;
+        clientInactivityExtension.addActionListener(inactivityActionListener);
+        clientInactivityExtension.addTimeoutListener(inactivityTimeoutListener);
+        running = true;
+        onUserAction();
+    }
+
+    public void stop() {
+        clientInactivityExtension.removeActionListener(inactivityActionListener);
+        clientInactivityExtension.removeTimeoutListener(inactivityTimeoutListener);
+        clientInactivityExtension.cancel();
+        running = false;
+    }
+
+    public boolean isRunning() {
+        return running;
     }
 
     private void onInactivityTimeout() {
@@ -85,9 +115,9 @@ public class SessionTimeoutHandler implements Serializable {
             clientInactivityExtension.scheduleTimeout(remainingSeconds);
         }
     }
-    
+
     public int getRemainingSeconds() {
-        int elapsedSeconds = (int) Math.round((double)(System.currentTimeMillis() - getLastActionTime()) / 1000);
+        int elapsedSeconds = (int) Math.round((double) (System.currentTimeMillis() - getLastActionTime()) / 1000);
         int remainingSeconds = sessionTimeoutSeconds - elapsedSeconds;
         return remainingSeconds;
     }
@@ -107,7 +137,7 @@ public class SessionTimeoutHandler implements Serializable {
         return (Long) VaadinSession.getCurrent().getAttribute(SESSION_KEY_LAST_ACTION_TIME);
     }
 
-    public interface SessionInactivityTimeoutListener extends Serializable {
+    public interface SessionTimeoutListener extends Serializable {
 
         void timeout();
     }
