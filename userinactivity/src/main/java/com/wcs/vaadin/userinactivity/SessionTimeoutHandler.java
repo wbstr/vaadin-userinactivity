@@ -75,14 +75,7 @@ public class SessionTimeoutHandler implements Serializable {
         if (!running) {
             throw new IllegalStateException("Not running");
         }
-        if (sessionTimeoutSeconds < 1) {
-            return;
-        }
-        int remainingSeconds = getRemainingSeconds();
-        if (remainingSeconds < 1) {
-            remainingSeconds = 1;
-        }
-        clientInactivityExtension.scheduleTimeout(remainingSeconds);
+        onInactivityTimeout();
     }
 
     public void start(int sessionTimeoutSeconds) {
