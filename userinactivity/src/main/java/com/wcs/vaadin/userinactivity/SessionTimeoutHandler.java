@@ -21,6 +21,15 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ * User inactivity timeout per session handler.
+ *
+ * This class tracks last user action time in the vaadin session,
+ * and provides a timeout listener for the user inactivity in the session.
+ *
+ * It can be handy, if you want so support multiple tabs in your application,
+ * and don't want to inactivate other tabs, or logout, until your user is active in one tab.
+ *
+ * Note, just UIs with an initialized SessionTimeoutHandler counts in user activity tracking.
  *
  * @author kumm
  */
@@ -53,10 +62,20 @@ public class SessionTimeoutHandler implements Serializable {
         };
     }
 
+    /**
+     * Adds a session inactivity timeout listener.
+     *
+     * @param listener timeout listener
+     */
     public void addTimeoutListener(SessionTimeoutListener listener) {
         timeoutListeners.add(listener);
     }
 
+    /**
+     * Removes a session inactivity timeout listener.
+     *
+     * @param listener timeout listener
+     */
     public void removeTimeoutListener(SessionTimeoutListener listener) {
         timeoutListeners.remove(listener);
     }
@@ -67,10 +86,25 @@ public class SessionTimeoutHandler implements Serializable {
         }
     }
 
+    /**
+     * Returns session inactivity timeout
+     *
+     * @return timeout in seconds
+     */
     public int getSessionTimeoutSeconds() {
         return sessionTimeoutSeconds;
     }
 
+    /**
+     * Reschedules a check of session inactivity timeout.
+     * It will trigger a timeout event if session inactivity timed out,
+     * or schedules the next timeout check.
+     * You need this method if you know some action happened meanwhile on an ather UI,
+     * but session inactivity is already timed out in your current UI.
+     * - for example a stopped countdown on an other UI.
+     *
+     * @throws IllegalStateException if not started
+     */
     public void reschedule() {
         if (!running) {
             throw new IllegalStateException("Not running");
@@ -78,6 +112,13 @@ public class SessionTimeoutHandler implements Serializable {
         onInactivityTimeout();
     }
 
+    /**
+     * Starts session timeout handling, and user action tracking.
+     * It's your responsibility to provide the same timeout value for all tracked UI's.
+     * Sets tunnig state to true.
+     *
+     * @param sessionTimeoutSeconds Less than 1 means no timeout handling, just lastActionTime tracking
+     */
     public void start(int sessionTimeoutSeconds) {
         this.sessionTimeoutSeconds = sessionTimeoutSeconds;
         clientInactivityExtension.addActionListener(inactivityActionListener);
@@ -86,6 +127,10 @@ public class SessionTimeoutHandler implements Serializable {
         onUserAction();
     }
 
+    /**
+     * Stops session timeout handling, and user action tracking.
+     * Sets tunnig state to false.
+     */
     public void stop() {
         clientInactivityExtension.removeActionListener(inactivityActionListener);
         clientInactivityExtension.removeTimeoutListener(inactivityTimeoutListener);
@@ -93,6 +138,11 @@ public class SessionTimeoutHandler implements Serializable {
         running = false;
     }
 
+    /**
+     * Returns running state
+     *
+     * @return true if running
+     */
     public boolean isRunning() {
         return running;
     }
@@ -109,6 +159,11 @@ public class SessionTimeoutHandler implements Serializable {
         }
     }
 
+    /**
+     * Returns remaining seconds until session timeout
+     *
+     * @return remaining time in seconds
+     */
     public int getRemainingSeconds() {
         int elapsedSeconds = (int) Math.round((double) (System.currentTimeMillis() - getLastActionTime()) / 1000);
         int remainingSeconds = sessionTimeoutSeconds - elapsedSeconds;
@@ -122,16 +177,34 @@ public class SessionTimeoutHandler implements Serializable {
         }
     }
 
+    private VaadinSession getSession() {
+        //I don't want to store a reference to the VaadinSession.
+        //Leave it to vaadin
+        return clientInactivityExtension.getUI().getSession();
+    }
+
     private void registerLastActionTime() {
-        VaadinSession.getCurrent().setAttribute(SESSION_KEY_LAST_ACTION_TIME, System.currentTimeMillis());
+        //we are under uidl request handling, so session is locked.
+        getSession().setAttribute(SESSION_KEY_LAST_ACTION_TIME, System.currentTimeMillis());
     }
 
+    /**
+     * Returns last user action time for all extended UI's in the vaadin session.
+     *
+     * @return timestamp of last action time
+     */
     public long getLastActionTime() {
-        return (Long) VaadinSession.getCurrent().getAttribute(SESSION_KEY_LAST_ACTION_TIME);
+        return (Long) getSession().getAttribute(SESSION_KEY_LAST_ACTION_TIME);
     }
 
+    /**
+     * Listener called on session timeout.
+     */
     public interface SessionTimeoutListener extends Serializable {
 
+        /**
+         * Session timeout elapsed
+         */
         void timeout();
     }
 

@@ -26,6 +26,11 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 
+/**
+ * Extension to track user activity, and provide inactivity timeout event.
+ * 
+ * @author kumm
+ */
 public class UserInactivityExtension extends AbstractExtension {
 
     private final Collection<TimeoutListener> timeoutListeners = new HashSet<TimeoutListener>();
@@ -58,30 +63,72 @@ public class UserInactivityExtension extends AbstractExtension {
         return UI.class;
     }
 
+    /**
+     * Adds a user inactivity timeout listener to the extended UI.
+     * You should not need this with an initialized sessionTimeoutHandler.
+     * Use instead {@link SessionTimeoutHandler.addTimeoutListener}.
+     * 
+     * @param listener timeout listener
+     */
     public void addTimeoutListener(TimeoutListener listener) {
         timeoutListeners.add(listener);
     }
 
+    /**
+     * Removes a user inactivity timeout listener from the extended UI.
+     * You should not need this with an initialized sessionTimeoutHandler.
+     * Use instead {@link SessionTimeoutHandler.removeTimeoutListener}.
+     * 
+     * @param listener timeout listener
+     */
     public void removeTimeoutListener(TimeoutListener listener) {
         timeoutListeners.remove(listener);
     }
 
+    /**
+     * Adds a user action listener to the extended UI.
+     * @param listener user action listener
+     */
     public void addActionListener(ActionListener listener) {
         actionListeners.add(listener);
     }
 
+    /**
+     * Removes a user action listener from the extended UI.
+     * @param listener user action listener
+     */
     public void removeActionListener(ActionListener listener) {
         actionListeners.remove(listener);
     }
 
-    public void scheduleTimeout(int timeout) {
-        getRpcProxy(UserInactivityClientRpc.class).scheduleTimeout(timeout);
+    /**
+     * Schedules a user inactivity timeout on the extended UI.
+     * On user action this timeout cancelled, and you are responsible to reschedule.
+     * {@link SessionTimeoutHandler} manages the schedule automatically, 
+     * so you should not use this method with it.
+     * 
+     * @param timeoutSeconds timeout in seconds
+     */
+    public void scheduleTimeout(int timeoutSeconds) {
+        getRpcProxy(UserInactivityClientRpc.class).scheduleTimeout(timeoutSeconds);
     }
 
+    /**
+     * Cancels the sheduled timeout.
+     * Does not fail if it's not scheduled.
+     * {@link SessionTimeoutHandler} manages the schedule automatically, 
+     * so you should not use this method with it.
+     */
     public void cancel() {
         scheduleTimeout(0);
     }
     
+    /**
+     * Initializes session-wise inactivity timeout handling on the extended UI.
+     * 
+     * @return SessionTimeoutHandler for the extended UI.
+     * @throws IllegalStateException if sessionTimeoutHandler already initlialized for the extended UI.
+     */
     public SessionTimeoutHandler initSessionTimeoutHandler() {
         if (sessionTimeoutHandler == null) {
             sessionTimeoutHandler = new SessionTimeoutHandler(this);
@@ -91,6 +138,11 @@ public class UserInactivityExtension extends AbstractExtension {
         }
     }
     
+    /**
+     * Returns the sessionTimeoutHandler for the extended UI.
+     * 
+     * @return sessionTimeoutHandler or null
+     */
     public SessionTimeoutHandler getSessionTimeoutHandler() {
         return sessionTimeoutHandler;
     }
@@ -107,16 +159,35 @@ public class UserInactivityExtension extends AbstractExtension {
         }
     }
 
+    /**
+     * Listener called when user inactivity timeout elapsed.
+     */
     public interface TimeoutListener extends Serializable {
-
+        
+        /**
+         * Inactivitiy timeout elapsed
+         */
         void timeout();
     }
 
+    /**
+     * Listener called on user action.
+     */
     public interface ActionListener extends Serializable {
-
+        
+        /**
+         * User action occured
+         */
         void action();
     }
 
+    /**
+     * Creates an instance of the extension, and extends the given UI.
+     * 
+     * @param ui UI to extend. It should be the current UI.
+     * @return The extension instance for the given UI
+     * @throws IllegalStateException if the UI is already extended
+     */
     public static UserInactivityExtension init(UI ui) {
         UserInactivityExtension instance = get(ui);
         if (instance != null) {
@@ -127,6 +198,12 @@ public class UserInactivityExtension extends AbstractExtension {
         return instance;
     }
 
+    /**
+     * Returns the instance of the extension for the given UI.
+     * 
+     * @param ui the UI. It should be the current UI.
+     * @return The extension instance for the given UI, or null
+     */
     public static UserInactivityExtension get(UI ui) {
         Collection<Extension> extensions = ui.getExtensions();
         for (Extension extension : extensions) {
