@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.HashSet;
 
 /**
- * Extension to track user activity, and provide inactivity timeout event.
+ * Extension to track user activity, and inactivity timeout.
  * 
  * @author kumm
  */

@@ -107,6 +107,10 @@ public class DemoUI extends UI {
                 @Override
                 public void countDownEnded(CountdownClock clock) {
                     close();
+                    /**
+                     * Since other UIs might exist, we have to check again the situation.
+                     * You can use push to broadcast a session extend event to get rid of this.
+                     */
                     if (sessionTimeoutHandler.getRemainingSeconds() < COUNT_DOWN_TIMEOUT) {
                         Notification.show("Imagine you are logged out!", Notification.Type.ERROR_MESSAGE);
                         sessionTimeoutHandler.stop();

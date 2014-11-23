@@ -114,8 +114,8 @@ public class SessionTimeoutHandler implements Serializable {
 
     /**
      * Starts session timeout handling, and user action tracking.
-     * It's your responsibility to provide the same timeout value for all tracked UI's.
-     * Sets tunnig state to true.
+     * It's your responsibility to provide the same timeout value for all tracked UI.
+     * Sets runnig state to true.
      *
      * @param sessionTimeoutSeconds Less than 1 means no timeout handling, just lastActionTime tracking
      */
@@ -129,7 +129,7 @@ public class SessionTimeoutHandler implements Serializable {
 
     /**
      * Stops session timeout handling, and user action tracking.
-     * Sets tunnig state to false.
+     * Sets runnig state to false.
      */
     public void stop() {
         clientInactivityExtension.removeActionListener(inactivityActionListener);
@@ -178,7 +178,7 @@ public class SessionTimeoutHandler implements Serializable {
     }
 
     private VaadinSession getSession() {
-        //I don't want to store a reference to the VaadinSession.
+        //I don't want to store a reference to VaadinSession.
         //Leave it to vaadin
         return clientInactivityExtension.getUI().getSession();
     }
