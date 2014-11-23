@@ -72,4 +72,7 @@ It's easy to mix this extension with (countdownclock)[https://vaadin.com/directo
 
 See [DemoUI.java](userinactivity-demo/src/main/java/com/wcs/vaadin/userinactivity/demo/DemoUI.java) for example.
 
+## Online demo
+
+Try the add-on demo at http://demo.webstar.hu/userinactivity
 
