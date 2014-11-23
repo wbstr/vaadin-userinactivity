@@ -24,6 +24,7 @@ import com.vaadin.server.VaadinServlet;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Notification;
+import com.vaadin.ui.TextField;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.Window;
@@ -39,7 +40,7 @@ public class DemoUI extends UI {
 
     private SessionTimeoutHandler sessionTimeoutHandler;
     private static final int SESSION_TIMEOUT = 10;
-    private static final int COUNT_DOWN_TIMEOUT = 5;
+    private static final int COUNT_DOWN_TIMEOUT = 10;
 
     @WebServlet(value = "/*", asyncSupported = true)
     @VaadinServletConfiguration(productionMode = false, ui = DemoUI.class, widgetset = "com.wcs.vaadin.userinactivity.demo.DemoWidgetSet")
@@ -49,9 +50,11 @@ public class DemoUI extends UI {
     @Override
     protected void init(VaadinRequest request) {
         VerticalLayout layout = new VerticalLayout();
-        layout.setSizeFull();
-        layout.addComponent(new Label("A window will pop up, when no action in "+SESSION_TIMEOUT+" second."));
-        layout.addComponent(new Button("Action"));
+        layout.setMargin(true);
+        Label label = new Label("A window will pop up, when no action in "+SESSION_TIMEOUT+" second.");
+        label.setStyleName("h1");
+        layout.addComponent(label);
+        layout.addComponent(new Button("Button"));
         setContent(layout);
         UserInactivityExtension userInactivityExtension = UserInactivityExtension.init(this);
         sessionTimeoutHandler = userInactivityExtension.initSessionTimeoutHandler();
