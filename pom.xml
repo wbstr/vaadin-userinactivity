@@ -13,6 +13,18 @@
 		<module>userinactivity-demo</module>
 	</modules>
     
+    <organization>
+        <name>Webstar Csoport</name>
+        <url>https://github.com/wbstr/</url>
+    </organization>
+    
+    <scm>
+        <url>https://github.com/wbstr/vaadin-userinactivity</url>
+        <connection>scm:git:git@github.com:wbstr/vaadin-userinactivity.git</connection>
+        <developerConnection>scm:git:git@github.com:wbstr/vaadin-userinactivity.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
     <build>
         <plugins>
             <plugin>
@@ -20,6 +32,13 @@
                 <version>2.5</version>
                 <configuration>
                     <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.4.2</version>
+                <configuration>
+                    <tagNameFormat>@{project.version}</tagNameFormat>
                 </configuration>
             </plugin>
         </plugins>
