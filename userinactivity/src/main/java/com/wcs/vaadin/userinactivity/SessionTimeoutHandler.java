@@ -15,7 +15,6 @@
  */
 package com.wcs.vaadin.userinactivity;
 
-import com.vaadin.server.VaadinSession;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Set;
@@ -38,14 +37,14 @@ public class SessionTimeoutHandler implements Serializable {
     private int sessionTimeoutSeconds;
     private final UserInactivityExtension clientInactivityExtension;
     private final Set<SessionTimeoutListener> timeoutListeners = new HashSet<SessionTimeoutListener>();
-    private final static String SESSION_KEY_LAST_ACTION_TIME
-            = SessionTimeoutHandler.class.getName() + ":last_client_action_time";
     private final UserInactivityExtension.TimeoutListener inactivityTimeoutListener;
     private final UserInactivityExtension.ActionListener inactivityActionListener;
+    private final LastActionRegistry lastActionRegistry;
     private boolean running = false;
 
-    SessionTimeoutHandler(UserInactivityExtension clientInactivityExtension) {
+    SessionTimeoutHandler(UserInactivityExtension clientInactivityExtension, LastActionRegistry lastActionRegistry) {
         this.clientInactivityExtension = clientInactivityExtension;
+        this.lastActionRegistry = lastActionRegistry;
         inactivityTimeoutListener = new UserInactivityExtension.TimeoutListener() {
 
             @Override
@@ -160,41 +159,19 @@ public class SessionTimeoutHandler implements Serializable {
     }
 
     /**
-     * Returns remaining seconds until session timeout
+     * Returns remaining seconds until next check for a timeout event
      *
      * @return remaining time in seconds
      */
     public int getRemainingSeconds() {
-        int elapsedSeconds = (int) Math.round((double) (System.currentTimeMillis() - getLastActionTime()) / 1000);
-        int remainingSeconds = sessionTimeoutSeconds - elapsedSeconds;
-        return remainingSeconds;
+        return lastActionRegistry.getRemainingSeconds(sessionTimeoutSeconds);
     }
 
     private void onUserAction() {
-        registerLastActionTime();
+        lastActionRegistry.registerLastActionTime();
         if (sessionTimeoutSeconds > 0) {
             clientInactivityExtension.scheduleTimeout(sessionTimeoutSeconds);
         }
-    }
-
-    private VaadinSession getSession() {
-        //I don't want to store a reference to VaadinSession.
-        //Leave it to vaadin
-        return clientInactivityExtension.getUI().getSession();
-    }
-
-    private void registerLastActionTime() {
-        //we are under uidl request handling, so session is locked.
-        getSession().setAttribute(SESSION_KEY_LAST_ACTION_TIME, System.currentTimeMillis());
-    }
-
-    /**
-     * Returns last user action time for all extended UI's in the vaadin session.
-     *
-     * @return timestamp of last action time
-     */
-    public long getLastActionTime() {
-        return (Long) getSession().getAttribute(SESSION_KEY_LAST_ACTION_TIME);
     }
 
     /**

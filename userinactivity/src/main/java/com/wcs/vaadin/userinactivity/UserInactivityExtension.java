@@ -16,12 +16,13 @@
 package com.wcs.vaadin.userinactivity;
 
 import com.vaadin.server.AbstractClientConnector;
-import com.wcs.vaadin.userinactivity.client.UserInactivityServerRpc;
 import com.vaadin.server.AbstractExtension;
 import com.vaadin.server.ClientConnector;
 import com.vaadin.server.Extension;
 import com.vaadin.ui.UI;
 import com.wcs.vaadin.userinactivity.client.UserInactivityClientRpc;
+import com.wcs.vaadin.userinactivity.client.UserInactivityServerRpc;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
@@ -66,8 +67,8 @@ public class UserInactivityExtension extends AbstractExtension {
     /**
      * Adds a user inactivity timeout listener to the extended UI.
      * You should not need this with an initialized sessionTimeoutHandler.
-     * Use instead {@link SessionTimeoutHandler.addTimeoutListener}.
-     * 
+     * Use instead {@link SessionTimeoutHandler#addTimeoutListener(SessionTimeoutHandler.SessionTimeoutListener)}.
+     *
      * @param listener timeout listener
      */
     public void addTimeoutListener(TimeoutListener listener) {
@@ -77,8 +78,8 @@ public class UserInactivityExtension extends AbstractExtension {
     /**
      * Removes a user inactivity timeout listener from the extended UI.
      * You should not need this with an initialized sessionTimeoutHandler.
-     * Use instead {@link SessionTimeoutHandler.removeTimeoutListener}.
-     * 
+     * Use instead {@link SessionTimeoutHandler#removeTimeoutListener(SessionTimeoutHandler.SessionTimeoutListener)}.
+     *
      * @param listener timeout listener
      */
     public void removeTimeoutListener(TimeoutListener listener) {
@@ -130,14 +131,25 @@ public class UserInactivityExtension extends AbstractExtension {
      * @throws IllegalStateException if sessionTimeoutHandler already initlialized for the extended UI.
      */
     public SessionTimeoutHandler initSessionTimeoutHandler() {
+        return initSessionTimeoutHandler(new DefaultLastActionRegistry());
+    }
+
+    /**
+     * Initializes session-wise inactivity timeout handling on the extended UI.
+     *
+     * @param lastActionRegistry custom registry for last user action time and expiration.
+     * @return SessionTimeoutHandler for the extended UI.
+     * @throws IllegalStateException if sessionTimeoutHandler already initlialized for the extended UI.
+     */
+    public SessionTimeoutHandler initSessionTimeoutHandler(LastActionRegistry lastActionRegistry) {
         if (sessionTimeoutHandler == null) {
-            sessionTimeoutHandler = new SessionTimeoutHandler(this);
+            sessionTimeoutHandler = new SessionTimeoutHandler(this, lastActionRegistry);
             return sessionTimeoutHandler;
         } else {
             throw new IllegalStateException("SessionHandler already  inititalized.");
         }
     }
-    
+
     /**
      * Returns the sessionTimeoutHandler for the extended UI.
      * 
