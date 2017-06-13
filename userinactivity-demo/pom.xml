@@ -4,7 +4,7 @@
     <groupId>com.wcs.vaadin.addons</groupId>
     <artifactId>userinactivity-demo</artifactId>
     <packaging>war</packaging>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.1</version>
     <name>UserInactivity Add-on Demo</name>
 
     <properties>

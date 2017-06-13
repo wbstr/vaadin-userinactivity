@@ -4,7 +4,7 @@
 	<groupId>com.wcs.vaadin.addons</groupId>
 	<artifactId>userinactivity-root</artifactId>
 	<packaging>pom</packaging>
-	<version>1.1-SNAPSHOT</version>
+	<version>1.1</version>
 	<name>UserInactivity Add-on Root Project</name>
 
 	<modules>
@@ -21,7 +21,7 @@
         <url>https://github.com/wbstr/vaadin-userinactivity</url>
         <connection>scm:git:git@github.com:wbstr/vaadin-userinactivity.git</connection>
         <developerConnection>scm:git:git@github.com:wbstr/vaadin-userinactivity.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>1.1</tag>
     </scm>
 
     <build>
