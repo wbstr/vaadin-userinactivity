@@ -32,9 +32,13 @@
 
     <inherits name="com.vaadin.DefaultWidgetSet" />
 
-    <inherits name="org.vaadin.kim.countdownclock.CountdownClockWidgetset" />
+    
 
     
 
     <inherits name="com.wcs.vaadin.userinactivity.WidgetSet" />
+
+    
+
+    <inherits name="org.vaadin.kim.countdownclock.WidgetSet" />
 </module>
